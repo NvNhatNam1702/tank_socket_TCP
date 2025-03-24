@@ -1,14 +1,15 @@
 import socket
 import threading
 import math
+from bullet import Bullet  # Import Bullet class
 
 # Server Setup
 host = '127.0.0.1'
 port = 5555
 
-# Game Data
-clients = {}
-tanks = {}
+clients = {}  # Stores client sockets
+tanks = {}  # Stores tank positions
+bullets = []  # Stores active bullets
 
 # Tank class
 class Tank:
@@ -23,7 +24,12 @@ class Tank:
         self.y += dy
 
     def rotate(self, angle):
-        self.angle = angle  # Set angle instead of incrementing
+        self.angle = angle
+
+    def shoot(self):
+        """Create a bullet from the tank's position."""
+        bullet = Bullet(self.x, self.y, self.angle)
+        bullets.append(bullet)
 
     def serialize(self):
         return f"{self.x},{self.y},{self.angle}"
@@ -31,18 +37,15 @@ class Tank:
 # Handle client connections
 def handle_client(client_socket, client_id):
     print(f"New connection: {client_id}")
-
-    # Initialize a tank for the client
     tanks[client_id] = Tank(400, 300)
 
     while True:
         try:
-            # Receive data from the client (player's input)
             data = client_socket.recv(1024).decode()
             if not data:
                 break
 
-            # Process the input (e.g., moving or rotating the tank)
+            # Process movement
             if data.startswith('MOVE'):
                 direction = data.split(":")[1]
                 if direction == "LEFT":
@@ -54,21 +57,36 @@ def handle_client(client_socket, client_id):
                 elif direction == "DOWN":
                     tanks[client_id].move(0, tanks[client_id].speed)
 
+            # Process rotation
             elif data.startswith('ROTATE'):
                 angle = float(data.split(":")[1])
                 tanks[client_id].rotate(angle)
 
-            # Send updated positions of all tanks back to all clients
+            # Process shooting
+            elif data.startswith('SHOOT'):
+                tanks[client_id].shoot()
+
+            # Update bullets
+            for bullet in bullets[:]:
+                bullet.move()
+                if bullet.is_out_of_bounds():
+                    bullets.remove(bullet)
+
+            # Send updated game state
             game_state = "\n".join([f"{client}:{tank.serialize()}" for client, tank in tanks.items()])
+            bullet_state = "\n".join([f"BULLET:{b.x},{b.y},{b.angle}" for b in bullets])
+            full_state = game_state + "\n" + bullet_state
+
             for c_id, c_socket in clients.items():
                 try:
-                    c_socket.send(game_state.encode())
+                    c_socket.send(full_state.encode())
                 except:
                     pass  # Ignore disconnected clients
+
         except:
             break
 
-    # Remove client and its tank when they disconnect
+    # Clean up on disconnect
     print(f"Connection closed: {client_id}")
     del clients[client_id]
     del tanks[client_id]
@@ -84,7 +102,7 @@ def start_server():
     client_id_counter = 1
     while True:
         client_socket, addr = server_socket.accept()
-        client_id = f"Player{client_id_counter}"  # Assign unique ID
+        client_id = f"Player{client_id_counter}"
         clients[client_id] = client_socket
         client_id_counter += 1
         threading.Thread(target=handle_client, args=(client_socket, client_id)).start()
