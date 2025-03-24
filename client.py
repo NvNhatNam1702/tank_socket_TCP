@@ -1,9 +1,7 @@
-# filepath: d:\personal_work\build_project_from_scratch\client.py
 import pygame
 import socket
 import math
-import time
-from bullet import Bullet  # Import Bullet class
+from bullet import Bullet
 
 # Client Setup
 host = '127.0.0.1'
@@ -15,7 +13,7 @@ client_socket.connect((host, port))
 pygame.init()
 screen_width, screen_height = 800, 600
 screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption('Client: Simple Battle Tank')
+pygame.display.set_caption('Tank Shooter - Multiplayer')
 
 # Load assets
 background_image = pygame.image.load(r"assets/background.jpg")
@@ -24,6 +22,7 @@ tank_image = pygame.transform.scale(tank_image, (40, 40))
 
 # Colors
 WHITE = (255, 255, 255)
+RED = (255, 0, 0)
 
 # Tank class
 class Tank:
@@ -47,7 +46,7 @@ def send_command(command):
 # Game loop
 def game_loop():
     clock = pygame.time.Clock()
-    tank = Tank(400, 300)
+    player_tanks = [Tank(400, 300), Tank(400, 300)]  # 2 player tanks
     bullets = []  # Local bullets
 
     running = True
@@ -75,9 +74,9 @@ def game_loop():
 
         # Rotate turret based on mouse position
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        dx, dy = mouse_x - tank.x, mouse_y - tank.y
-        tank.angle = math.degrees(math.atan2(-dy, dx))
-        send_command(f"ROTATE:{tank.angle}")
+        dx, dy = mouse_x - player_tanks[0].x, mouse_y - player_tanks[0].y
+        player_tanks[0].angle = math.degrees(math.atan2(-dy, dx))
+        send_command(f"ROTATE:{player_tanks[0].angle}")
 
         # Receive state from server
         try:
@@ -85,30 +84,32 @@ def game_loop():
             if data:
                 bullets.clear()
                 lines = data.split("\n")
+                player_index = 0
                 for line in lines:
                     if not line.strip():
                         continue
                     if line.startswith("BULLET"):
-                        # Bullet data: BULLET:x,y,angle
                         _, bullet_data = line.split(":")
                         bx, by, bangle = map(float, bullet_data.split(","))
                         bullets.append(Bullet(bx, by, bangle))
-                    else:
-                        # Tank data: e.g. Player1:400,300,90
-                        # Update local tank with values in line
-                        player_id, tank_data = line.split(":")
+                    elif line.startswith("PLAYER") and player_index < 2:
+                        # Player data: PLAYER:x,y,angle
+                        _, tank_data = line.split(":")
                         x, y, angle = map(float, tank_data.split(","))
-                        # For a single-player client, just update local tank
-                        tank.x, tank.y, tank.angle = x, y, angle
+                        player_tanks[player_index].x = x
+                        player_tanks[player_index].y = y
+                        player_tanks[player_index].angle = angle
+                        player_index += 1
         except:
             pass
 
-        # Draw tank
-        tank.draw()
+        # Draw tanks
+        for tank in player_tanks:
+            tank.draw()
 
         # Draw bullets
         for bullet in bullets:
-            pygame.draw.circle(screen, (255, 0, 0), (int(bullet.x), int(bullet.y)), 5)
+            pygame.draw.circle(screen, RED, (int(bullet.x), int(bullet.y)), 5)
 
         pygame.display.update()
         clock.tick(60)
