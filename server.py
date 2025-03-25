@@ -16,6 +16,16 @@ server_socket.listen(2)  # Allow only 2 players
 
 print("Waiting for players...")
 
+def disconnect_player(client_socket):
+    global players
+    if client_socket in players:
+        del players[client_socket]
+        try:
+            client_socket.close()
+        except:
+            pass
+        print("A player lost and was disconnected.")
+
 # Bullet update logic
 def update_bullets():
     global bullets
@@ -28,6 +38,27 @@ def update_bullets():
         # Remove bullets that go out of bounds
         if bullet["x"] < 0 or bullet["x"] > 800 or bullet["y"] < 0 or bullet["y"] > 600:
             bullets.remove(bullet)
+            continue
+
+        # Check for collision with tanks
+        for client_socket, tank in list(players.items()):
+            if check_collision(bullet, tank):
+                # Send 'LOSE' message to the hit client
+                try:
+                    client_socket.send("LOSE".encode())
+                except:
+                    pass
+                # Remove bullet and disconnect player
+                bullets.remove(bullet)
+                disconnect_player(client_socket)
+                break
+
+def check_collision(bullet, tank):
+    bullet_radius = 5  # Same as drawing radius
+    tank_width, tank_height = 40, 40  # Assumed tank dimensions
+    # For simplicity, use center distance collision:
+    distance = math.sqrt((bullet["x"] - tank["x"]) ** 2 + (bullet["y"] - tank["y"]) ** 2)
+    return distance < (tank_width / 2 + bullet_radius)
 
 # Handle player commands
 def handle_client(client_socket, player_id):
@@ -54,10 +85,14 @@ def handle_client(client_socket, player_id):
 
             elif data.startswith("ROTATE:"):
                 players[client_socket]["angle"] = float(data.split(":")[1])
-
+                
             elif data == "SHOOT":
                 px, py, angle = players[client_socket].values()
-                bullets.append({"x": px, "y": py, "angle": angle})
+                # Offset so the bullet spawns in front of the tank instead of in its center
+                offset = 20
+                bullet_x = px + offset * math.cos(math.radians(angle))
+                bullet_y = py - offset * math.sin(math.radians(angle))
+                bullets.append({"x": bullet_x, "y": bullet_y, "angle": angle})
 
         except:
             break

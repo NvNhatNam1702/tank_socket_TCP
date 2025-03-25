@@ -82,6 +82,18 @@ def game_loop():
         try:
             data = client_socket.recv(1024).decode()
             if data:
+                # Check if the client received a lose notification
+                if "LOSE" in data:
+                    # Display lose notification
+                    font = pygame.font.SysFont("Arial", 50)
+                    text = font.render("You Lose!", True, RED)
+                    screen.blit(text, (screen_width // 2 - text.get_width() // 2,
+                                    screen_height // 2 - text.get_height() // 2))
+                    pygame.display.update()
+                    pygame.time.delay(2000)  # Show message for 2 seconds
+                    running = False
+                    continue
+
                 bullets.clear()
                 lines = data.split("\n")
                 player_index = 0
