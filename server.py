@@ -43,14 +43,14 @@ def update_bullets():
         # Check for collision with tanks
         for client_socket, tank in list(players.items()):
             if check_collision(bullet, tank):
-                # Send 'LOSE' message to the hit client
                 try:
+                    # Inform the client that it got hit
                     client_socket.send("LOSE".encode())
                 except:
                     pass
-                # Remove bullet and disconnect player
+                # Instead of disconnecting, respawn the tank at the default position:
+                players[client_socket] = {"x": 400, "y": 300, "angle": 0}
                 bullets.remove(bullet)
-                disconnect_player(client_socket)
                 break
 
 def check_collision(bullet, tank):
@@ -64,7 +64,11 @@ def check_collision(bullet, tank):
 def handle_client(client_socket, player_id):
     global players, bullets
 
-    players[client_socket] = {"x": 400, "y": 300, "angle": 0}  # Default position
+    # Assign different initial positions based on player_id
+    if player_id == 1:
+        players[client_socket] = {"x": 200, "y": 300, "angle": 0}  # Tank 1 position
+    elif player_id == 2:
+        players[client_socket] = {"x": 600, "y": 300, "angle": 0}  # Tank 2 position
 
     while True:
         try:

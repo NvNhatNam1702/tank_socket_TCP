@@ -82,7 +82,7 @@ def game_loop():
         try:
             data = client_socket.recv(1024).decode()
             if data:
-                # Check if the client received a lose notification
+                # Check if the client received a lose/respawn notification
                 if "LOSE" in data:
                     # Display lose notification
                     font = pygame.font.SysFont("Arial", 50)
@@ -91,7 +91,7 @@ def game_loop():
                                     screen_height // 2 - text.get_height() // 2))
                     pygame.display.update()
                     pygame.time.delay(2000)  # Show message for 2 seconds
-                    running = False
+                    # Instead of stopping, continue so that the new respawn position from the server takes effect
                     continue
 
                 bullets.clear()
