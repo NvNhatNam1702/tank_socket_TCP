@@ -49,7 +49,11 @@ def update_bullets():
                 except:
                     pass
                 # Instead of disconnecting, respawn the tank at the default position:
-                players[client_socket] = {"x": 400, "y": 300, "angle": 0}
+                if client_socket in players:
+                        if client_socket == list(players.keys())[0]:
+                            players[client_socket] = {"x": 200, "y": 300, "angle": 0}  # Tank 1 respawn
+                        else:
+                            players[client_socket] = {"x": 600, "y": 300, "angle": 0}  # Tank 2 respawn
                 bullets.remove(bullet)
                 break
 
