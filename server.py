@@ -33,7 +33,7 @@ def update_bullets():
         # Update bullet position based on its angle
         rad = math.radians(bullet["angle"])
         bullet["x"] += 10 * math.cos(rad)
-        bullet["y"] -= 10 * math.sin(rad)
+        bullet["y"] += 10 * math.sin(rad)
 
         # Remove bullets that go out of bounds
         if bullet["x"] < 0 or bullet["x"] > 800 or bullet["y"] < 0 or bullet["y"] > 600:
@@ -97,9 +97,9 @@ def handle_client(client_socket, player_id):
             elif data == "SHOOT":
                 px, py, angle = players[client_socket].values()
                 # Offset so the bullet spawns in front of the tank instead of in its center
-                offset = 20
+                offset = 25 # Adjust this value based on your tank size
                 bullet_x = px + offset * math.cos(math.radians(angle))
-                bullet_y = py - offset * math.sin(math.radians(angle))
+                bullet_y = py + offset * math.sin(math.radians(angle))
                 bullets.append({"x": bullet_x, "y": bullet_y, "angle": angle})
 
         except:

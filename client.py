@@ -17,7 +17,7 @@ pygame.display.set_caption('Tank Shooter - Multiplayer')
 
 # Load assets
 background_image = pygame.image.load(r"assets/background.jpg")
-tank_image = pygame.image.load(r"assets/tank.jpg")
+tank_image = pygame.image.load(r"assets\image_no_bg.png")
 tank_image = pygame.transform.scale(tank_image, (40, 40))
 
 # Colors
@@ -75,9 +75,11 @@ def game_loop():
         # Rotate turret based on mouse position
         mouse_x, mouse_y = pygame.mouse.get_pos()
         dx, dy = mouse_x - player_tanks[0].x, mouse_y - player_tanks[0].y
-        player_tanks[0].angle = math.degrees(math.atan2(-dy, dx))
+        # Use atan2(dy, dx) for a direct point-at-mouse approach
+        raw_angle = math.degrees(math.atan2(dy, dx))
+        # If your tank sprite points “up” by default, adjust as needed
+        player_tanks[0].angle = raw_angle  # Or just raw_angle, or raw_angle + 90, etc.  
         send_command(f"ROTATE:{player_tanks[0].angle}")
-
         # Receive state from server
         try:
             data = client_socket.recv(1024).decode()
