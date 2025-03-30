@@ -95,7 +95,16 @@ def game_loop():
                     pygame.time.delay(2000)  # Show message for 2 seconds
                     # Instead of stopping, continue so that the new respawn position from the server takes effect
                     continue
-
+                elif "WIN" in data:
+                    # Display win notification
+                    font = pygame.font.SysFont("Arial", 50)
+                    text = font.render("You Win!", True, (0, 255, 0))  # green text
+                    screen.blit(text,
+                        (screen_width // 2 - text.get_width() // 2,
+                        screen_height // 2 - text.get_height() // 2))
+                    pygame.display.update()
+                    pygame.time.delay(2000) 
+                    continue
                 bullets.clear()
                 lines = data.split("\n")
                 player_index = 0

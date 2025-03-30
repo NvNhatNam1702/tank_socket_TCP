@@ -36,7 +36,7 @@ def update_bullets():
         bullet["y"] += 10 * math.sin(rad)
 
         # Remove bullets that go out of bounds
-        if bullet["x"] < 0 or bullet["x"] > 800 or bullet["y"] < 0 or bullet["y"] > 600:
+        if not (0 <= bullet["x"] <= 800 and 0 <= bullet["y"] <= 600):
             bullets.remove(bullet)
             continue
 
@@ -44,16 +44,22 @@ def update_bullets():
         for client_socket, tank in list(players.items()):
             if check_collision(bullet, tank):
                 try:
-                    # Inform the client that it got hit
+                    # Notify the hit player
                     client_socket.send("LOSE".encode())
                 except:
                     pass
-                # Instead of disconnecting, respawn the tank at the default position:
+
+                # Notify the other player of the win
+                for other_socket in [s for s in players.keys() if s != client_socket]:
+                    try:
+                        other_socket.send("WIN".encode())
+                    except:
+                        pass
+
+                # Respawn the hit tank at its default position
                 if client_socket in players:
-                        if client_socket == list(players.keys())[0]:
-                            players[client_socket] = {"x": 200, "y": 300, "angle": 0}  # Tank 1 respawn
-                        else:
-                            players[client_socket] = {"x": 600, "y": 300, "angle": 0}  # Tank 2 respawn
+                    players[client_socket] = {"x": 200, "y": 300, "angle": 0} if client_socket == list(players.keys())[0] else {"x": 600, "y": 300, "angle": 0}
+
                 bullets.remove(bullet)
                 break
 
