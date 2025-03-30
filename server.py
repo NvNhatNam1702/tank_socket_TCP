@@ -70,7 +70,6 @@ def check_collision(bullet, tank):
     distance = math.sqrt((bullet["x"] - tank["x"]) ** 2 + (bullet["y"] - tank["y"]) ** 2)
     return distance < (tank_width / 2 + bullet_radius)
 
-# Handle player commands
 def handle_client(client_socket, player_id):
     global players, bullets
 
@@ -79,13 +78,17 @@ def handle_client(client_socket, player_id):
         players[client_socket] = {"x": 200, "y": 300, "angle": 0}  # Tank 1 position
     elif player_id == 2:
         players[client_socket] = {"x": 600, "y": 300, "angle": 0}  # Tank 2 position
+    else:
+        client_socket.close()  # Invalid player ID, reject connection
+        return
 
-    while True:
-        try:
-            data = client_socket.recv(1024).decode()
+    try:
+        while True:
+            data = client_socket.recv(4096).decode()
             if not data:
                 break
 
+            # Handle movement
             if data.startswith("MOVE:"):
                 print(f"Received MOVE: {data}")
                 direction = data.split(":")[1]
@@ -98,30 +101,40 @@ def handle_client(client_socket, player_id):
                 elif direction == "DOWN":
                     players[client_socket]["y"] += 5
 
+            # Handle rotation
             elif data.startswith("ROTATE:"):
-                players[client_socket]["angle"] = float(data.split(":")[1])
-                
+                try:
+                    players[client_socket]["angle"] = float(data.split(":")[1])
+                except ValueError:
+                    print(f"Invalid ROTATE value: {data}")
+
+            # Handle shooting
             elif data == "SHOOT":
                 print(f"Received SHOOT from {client_socket}")
                 px, py, angle = players[client_socket].values()
-                # Offset so the bullet spawns in front of the tank instead of in its center
-                offset = 25 # Adjust this value based on your tank size
+                offset = 25  # Adjust this based on tank size
                 bullet_x = px + offset * math.cos(math.radians(angle))
                 bullet_y = py + offset * math.sin(math.radians(angle))
                 bullets.append({"x": bullet_x, "y": bullet_y, "angle": angle})
                 print(f"Player {client_socket} fired a bullet from ({bullet_x}, {bullet_y}) at angle {angle}")
 
-        except:
-            break
+    except ConnectionResetError:
+        print(f"Client {client_socket} forcibly closed the connection.")
+    except Exception as e:
+        print(f"Error handling client {client_socket}: {e}")
 
-    print(f"Player {player_id} disconnected.")
-    del players[client_socket]
-    client_socket.close()
+    finally:
+        disconnect_player(client_socket)
+        print(f"Player {player_id} disconnected.")
+        if client_socket in players:
+            del players[client_socket]  # Ensure key exists before deleting
+        client_socket.close()
+
 
 # Broadcast game state to all players
 def send_updates():
     while True:
-        time.sleep(1 / 60)  # 60 FPS
+        time.sleep(1 / 120)  # 60 FPS
 
         # Update bullets
         update_bullets()

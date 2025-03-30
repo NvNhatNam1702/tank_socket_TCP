@@ -38,7 +38,8 @@ class Tank:
 
 # Send commands
 def send_command(command):
-    print(f"Sending to server: {command}")
+    if command == "SHOOT": 
+        print(f"Sending to server: {command}")
     try:
         client_socket.send(command.encode())
     except:
@@ -83,7 +84,7 @@ def game_loop():
         send_command(f"ROTATE:{player_tanks[0].angle}")
         # Receive state from server
         try:
-            data = client_socket.recv(1024).decode()
+            data = client_socket.recv(4096).decode()
             if data:
                 # Check if the client received a lose/respawn notification
                 if "LOSE" in data:
