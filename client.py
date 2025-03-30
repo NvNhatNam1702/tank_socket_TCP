@@ -4,7 +4,7 @@ import math
 from bullet import Bullet
 
 # Client Setup
-host = '127.0.0.1'
+host = '192.168.1.13'
 port = 5555
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((host, port))
@@ -38,6 +38,7 @@ class Tank:
 
 # Send commands
 def send_command(command):
+    print(f"Sending to server: {command}")
     try:
         client_socket.send(command.encode())
     except:

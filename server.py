@@ -87,6 +87,7 @@ def handle_client(client_socket, player_id):
                 break
 
             if data.startswith("MOVE:"):
+                print(f"Received MOVE: {data}")
                 direction = data.split(":")[1]
                 if direction == "LEFT":
                     players[client_socket]["x"] -= 5
@@ -101,12 +102,14 @@ def handle_client(client_socket, player_id):
                 players[client_socket]["angle"] = float(data.split(":")[1])
                 
             elif data == "SHOOT":
+                print(f"Received SHOOT from {client_socket}")
                 px, py, angle = players[client_socket].values()
                 # Offset so the bullet spawns in front of the tank instead of in its center
                 offset = 25 # Adjust this value based on your tank size
                 bullet_x = px + offset * math.cos(math.radians(angle))
                 bullet_y = py + offset * math.sin(math.radians(angle))
                 bullets.append({"x": bullet_x, "y": bullet_y, "angle": angle})
+                print(f"Player {client_socket} fired a bullet from ({bullet_x}, {bullet_y}) at angle {angle}")
 
         except:
             break
