@@ -11,7 +11,7 @@ client_socket.connect((host, port))
 
 # Initialize Pygame
 pygame.init()
-screen_width, screen_height = 800, 600
+screen_width, screen_height = 800, 533
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption('Tank Shooter - Multiplayer')
 
