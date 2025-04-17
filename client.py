@@ -9,6 +9,16 @@ port = 5555
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((host, port))
 
+try:
+    data = client_socket.recv(1024).decode()
+    if "FULL" in data:
+        print("Server is full. Please try again later.")
+        client_socket.close()
+        exit()  # Exit before launching game
+except:
+    print("Connection error.")
+    exit()
+
 # Initialize Pygame
 pygame.init()
 screen_width, screen_height = 800, 533
