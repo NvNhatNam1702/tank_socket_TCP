@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import scrolledtext
 
 # Game state
-players = {}  # Store player info {client_socket: {"x": 400, "y": 300, "angle": 0}}
+players = {}  # Store player info {client_socket: {"x": ..., "y": ..., "angle": ...}}
 bullets = []  # Store all bullets [{"x": bx, "y": by, "angle": bangle}]
 
 # Server setup
@@ -40,7 +40,7 @@ def start_server():
         # Initialize and bind the server socket
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((host, port))
-        server_socket.listen(2)  # Allow only 2 players
+        server_socket.listen(4)  # Allow up to 4 players
         log_message("Server started. Waiting for players...")
 
         # Start threads for accepting players and sending updates
@@ -103,7 +103,7 @@ def update_bullets():
                 except:
                     pass
 
-                # Notify the other player of the win
+                # Notify the other players of the win
                 for other_socket in [s for s in players.keys() if s != client_socket]:
                     try:
                         other_socket.send("WIN".encode())
@@ -113,7 +113,18 @@ def update_bullets():
 
                 # Respawn the hit tank at its default position
                 if client_socket in players:
-                    players[client_socket] = {"x": 200, "y": 300, "angle": 0} if client_socket == list(players.keys())[0] else {"x": 600, "y": 300, "angle": 0}
+                    # Assign positions based on the order: 
+                    # Player 1: (200, 300), Player 2: (600, 300),
+                    # Player 3: (200, 500), Player 4: (600, 500)
+                    index = list(players.keys()).index(client_socket)
+                    if index == 0:
+                        players[client_socket] = {"x": 200, "y": 300, "angle": 0}
+                    elif index == 1:
+                        players[client_socket] = {"x": 600, "y": 300, "angle": 0}
+                    elif index == 2:
+                        players[client_socket] = {"x": 200, "y": 500, "angle": 0}
+                    else:
+                        players[client_socket] = {"x": 600, "y": 500, "angle": 0}
 
                 bullets.remove(bullet)
                 break
@@ -128,11 +139,15 @@ def check_collision(bullet, tank):
 def handle_client(client_socket, player_id):
     global players, bullets
 
-    # Assign different initial positions based on player_id
+    # Assign initial positions based on player_id for 4 players
     if player_id == 1:
-        players[client_socket] = {"x": 200, "y": 300, "angle": 0}  # Tank 1 position
+        players[client_socket] = {"x": 200, "y": 300, "angle": 0}  # Player 1 position
     elif player_id == 2:
-        players[client_socket] = {"x": 600, "y": 300, "angle": 0}  # Tank 2 position
+        players[client_socket] = {"x": 600, "y": 300, "angle": 0}  # Player 2 position
+    elif player_id == 3:
+        players[client_socket] = {"x": 200, "y": 500, "angle": 0}  # Player 3 position
+    elif player_id == 4:
+        players[client_socket] = {"x": 600, "y": 500, "angle": 0}  # Player 4 position
     else:
         client_socket.close()  # Invalid player ID, reject connection
         return
@@ -186,7 +201,6 @@ def handle_client(client_socket, player_id):
             del players[client_socket]  # Ensure key exists before deleting
         client_socket.close()
 
-# Broadcast game state to all players
 def send_updates():
     while True:
         time.sleep(1 / 120)  # 60 FPS
@@ -208,6 +222,7 @@ def send_updates():
                 client.send(game_state.encode())
             except:
                 pass
+
 def accept_players():
     player_id = 1
     while True:
@@ -215,7 +230,7 @@ def accept_players():
             client_socket, addr = server_socket.accept()
 
             # Check if the maximum number of players is reached
-            if player_id > 2:
+            if player_id > 4:
                 log_message(f"Connection attempt from {addr} rejected: Server full.")
                 client_socket.send("FULL".encode())  # Notify the client that the server is full
                 client_socket.close()  # Close the connection
